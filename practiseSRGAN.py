@@ -20,8 +20,8 @@ class SRGAN():
     def __init__(self):
 
         self.channels = 3
-        self.lr_height = 64                # Low resolution height
-        self.lr_width = 64                  # Low resolution width
+        self.lr_height = 32                # Low resolution height
+        self.lr_width = 32                  # Low resolution width
         self.lr_shape = (self.lr_height, self.lr_width, self.channels)
         self.hr_height = self.lr_height*4   # High resolution height
         self.hr_width = self.lr_width*4     # High resolution width
@@ -37,11 +37,11 @@ class SRGAN():
 
         # Commenting the below code just for not downloading the data
 
-        # self.vgg = self.build_vgg()
-        # self.vgg.trainable = False
-        # self.vgg.compile(loss='mse',
-        #     optimizer=optimizer,
-        #     metrics=['accuracy'])
+        self.vgg = self.build_vgg()
+        self.vgg.trainable = False
+        self.vgg.compile(loss='mse',
+            optimizer=optimizer,
+            metrics=['accuracy'])
 
         # Configure data loader
         self.dataset_name = 'img_align_celeba'
@@ -73,7 +73,7 @@ class SRGAN():
         fake_hr = self.generator(img_lr)
 
         # Extract image features of the generated img
-        # fake_features = self.vgg(fake_hr)
+        fake_features = self.vgg(fake_hr)
 
         # For the combined model we will only train the generator
         self.discriminator.trainable = False
@@ -81,7 +81,7 @@ class SRGAN():
         # Discriminator determines validity of generated high res. images
         validity = self.discriminator(fake_hr)
 
-        self.combined = Model([img_lr, img_hr], [validity, validity])
+        self.combined = Model([img_lr, img_hr], [validity, fake_features])
         self.combined.compile(loss=['binary_crossentropy', 'mse'],
                                 loss_weights=[1e-3, 1],
                                 optimizer=optimizer)
@@ -228,10 +228,10 @@ class SRGAN():
 
             # Commening below code just for not downloading the data
 
-            # image_features = self.vgg.predict(imgs_hr)
+            image_features = self.vgg.predict(imgs_hr)
 
             # Train the generators
-            g_loss = self.combined.train_on_batch([imgs_lr, imgs_hr], [valid, valid])
+            g_loss = self.combined.train_on_batch([imgs_lr, imgs_hr], [valid, image_features])
 
             elapsed_time = datetime.datetime.now() - start_time
             # Plot the progress
@@ -256,6 +256,7 @@ class SRGAN():
         # Save generated images and the high resolution originals
         titles = ['Generated', 'Original']
         fig, axs = plt.subplots(r, c)
+        print ('fig', fig)
         cnt = 0
         for row in range(r):
             for col, image in enumerate([fake_hr, imgs_hr]):
@@ -265,7 +266,7 @@ class SRGAN():
             cnt += 1
         fig.savefig("images/%s/%d.png" % (self.dataset_name, epoch))
         plt.close()
-
+        print ('imgs_lr', imgs_lr)
         # Save low resolution images for comparison
         for i in range(r):
             fig = plt.figure()
@@ -275,4 +276,4 @@ class SRGAN():
 
 if __name__ == '__main__':
     gan = SRGAN()
-    gan.train(directory= './datasets/',epochs=3, batch_size=1, sample_interval=50)
+    gan.train(directory= './datasets/',epochs=3, batch_size=3, sample_interval=50)
