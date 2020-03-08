@@ -15,7 +15,6 @@ def dummy_load_training_data (batch_size=1, is_testing=False, img_res=(128, 128)
     data_type = "train" if not is_testing else "test"
         
     path = glob('./datasets/%s/*' % ('img_align_celeba'))
-    print ('path', path)
     batch_images = np.random.choice(path, size=3)
 
     imgs_hr = []

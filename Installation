@@ -1,0 +1,5 @@
+env name :- srgan
+
+conda install --name srgan keras
+conda install --name srgan matplotlib  
+conda install --name srgan scikit-image

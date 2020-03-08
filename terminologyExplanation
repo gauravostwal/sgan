@@ -1,0 +1,8 @@
+Dense Layers :- Refers to Dense layers which are layers where every neuron of the previous layer is connected to every neuron of the next input layer.
+Reshape — Helps us reshape the output of a layer to a specific shape.
+Flatten — Allows us to flatten the input by removing all of its dimensions except for 1. It’s essentially the operation of converting a Matrix into a simple array.
+Dropout — Is an essential technique to reduce the risks of overfitting our model. It achieves this by randomly setting the outgoing edges of hidden neurons to 0.
+BatchNormalization — This mechanism will allow us to train on a more stable distribution of inputs. This is achieved through standardizing our inputs to have a mean of 0 and a standard deviation of 1.
+Activation — Refers to our Activation functions, which essentially transform any input signal to an output signal for the next layer.
+LeakyRelu — Is a type of Activation function.
+Adam — This is our Optimizer function.

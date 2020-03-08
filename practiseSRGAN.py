@@ -13,6 +13,7 @@ import sys
 import Utils
 import numpy as np
 import os
+from keras.models import model_from_json
 
 import keras.backend as K
 
@@ -21,7 +22,7 @@ class SRGAN():
 
         self.channels = 3
         self.lr_height = 32                # Low resolution height
-        self.lr_width = 32                  # Low resolution width
+        self.lr_width = 32                 # Low resolution width
         self.lr_shape = (self.lr_height, self.lr_width, self.channels)
         self.hr_height = self.lr_height*4   # High resolution height
         self.hr_width = self.lr_width*4     # High resolution width
@@ -34,8 +35,6 @@ class SRGAN():
 
         # We use a pre-trained VGG19 model to extract image features from the high resolution
         # and the generated high resolution images and minimize the mse between them
-
-        # Commenting the below code just for not downloading the data
 
         self.vgg = self.build_vgg()
         self.vgg.trainable = False
@@ -61,9 +60,11 @@ class SRGAN():
         self.discriminator.compile(loss='mse',
             optimizer=optimizer,
             metrics=['accuracy'])
+        self.discriminator.summary()
 
         # Build the generator
         self.generator = self.build_generator()
+        self.generator.summary()
 
         # High res. and low res. images
         img_hr = Input(shape=self.hr_shape)
@@ -83,8 +84,11 @@ class SRGAN():
 
         self.combined = Model([img_lr, img_hr], [validity, fake_features])
         self.combined.compile(loss=['binary_crossentropy', 'mse'],
-                                loss_weights=[1e-3, 1],
-                                optimizer=optimizer)
+                                loss_weights=[1e-3, 1], optimizer=optimizer)
+        self.combined.summary()
+
+        
+
     def build_vgg(self):
         """
         Builds a pre-trained VGG19 model that outputs image features extracted at the
@@ -239,13 +243,19 @@ class SRGAN():
 
             # If at save interval => save generated image samples
             if epoch % sample_interval == 0:
+                model_json = self.generator.to_json()
+                with open("model.json", "w") as json_file:
+                    json_file.write(model_json)
+                # serialize weights to HDF5
+                self.generator.save_weights("model.h5")
+                print("Saved model to disk")
                 self.sample_images(epoch)
 
     def sample_images(self, epoch):
         os.makedirs('images/%s' % self.dataset_name, exist_ok=True)
         r, c = 2, 2
 
-        imgs_hr, imgs_lr = Utils.dummy_load_training_data()
+        imgs_hr, imgs_lr = Utils.dummy_load_training_data(batch_size=3)
         fake_hr = self.generator.predict(imgs_lr)
 
         # Rescale images 0 - 1
@@ -256,7 +266,6 @@ class SRGAN():
         # Save generated images and the high resolution originals
         titles = ['Generated', 'Original']
         fig, axs = plt.subplots(r, c)
-        print ('fig', fig)
         cnt = 0
         for row in range(r):
             for col, image in enumerate([fake_hr, imgs_hr]):
@@ -266,7 +275,6 @@ class SRGAN():
             cnt += 1
         fig.savefig("images/%s/%d.png" % (self.dataset_name, epoch))
         plt.close()
-        print ('imgs_lr', imgs_lr)
         # Save low resolution images for comparison
         for i in range(r):
             fig = plt.figure()
@@ -276,4 +284,4 @@ class SRGAN():
 
 if __name__ == '__main__':
     gan = SRGAN()
-    gan.train(directory= './datasets/',epochs=3, batch_size=3, sample_interval=50)
+    gan.train(directory= './datasets/',epochs=100, batch_size=3, sample_interval=1)
